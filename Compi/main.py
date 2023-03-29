@@ -1,330 +1,322 @@
 import os
 
-_NOMBRE_ARCHIVO = os.getcwd() + "/ProgramaEnC.c"
-tabla_de_simbolos = []
-palabras_reservadas = [
-    'PRINTF',
-    'WHILE',
-    'DEFINE',
-    'SCANF',
-    'SWITCH',
-    'IF',
-    'ELSE',
-    'CASE',
+_NOMBRE_ARCHIVO = os.getcwd() + "/Prueba.c"
+
+tipos_variables = [
     'INT',
     'FLOAT',
-    'CHAR',
-    'DOUBLE',
-    'TRY',
-    'CATCH',
-    'MAIN',
-    'VOID',
-    'GETS',
-    'DO',
-    'FOR',
-    'BREAK',
-    'SYSTEM',
-    'RETURN',
-    'PAUSE',
+    'CHAR'
 ]
-simb = ['(', ')', '{', '}', '[', ']', '"', ',']
-for i in palabras_reservadas:
-    tabla_de_simbolos.append(['PALABRA RESERVADA', i])
-
-operadores_relacionales = ['>', '<', '=', '!']
-operadores = ['+', '*', '/', '-', '%']
-
+tipos_bucles = [
+    'DO',
+    'WHILE',
+    'FOR',
+    'SWITCH',
+    'CASE',
+    'IF',
+    'ELSE',
+    'BREAK',
+]
+tipos_acciones= [
+    'PRINTF',
+    'SCANF',
+    'MAIN',
+    'RETURN',
+]
+simb = [
+    '(',
+    ')',
+    '{',
+    '}',
+    '[',
+    ']',
+    '"',
+    ','
+]
+relaciones = [
+    '>',
+    '<',
+    '=',
+    '!',
+    ';'
+]
+operaciones = [
+    '+',
+    '*',
+    '/',
+    '-',
+    '%'
+]
+tokens = []
 with open(_NOMBRE_ARCHIVO, 'r') as file:
     cont = file.read() + " \0"
 
-
-
     def sigToken():
-        estado = 0
+        etapa = 0
         contador = -1
         c = None
         pal = ''
         ascii = 0
         linea = 1
 
+        if contador >= len(cont) - 2:
+            tokens.append("(Fin del archivo, EOF)")
+
         while contador < len(cont) - 1:
-            if contador >= len(cont) - 2:
-                print("Fin del archivo")
-                return
 
             contador += 1
             c = cont[contador]
             ascii = ord(c.upper())
             if ascii == 13:
                 linea += 1
-            if estado == 0:
-                if c in operadores_relacionales:
+            if etapa == 0:
+                if c in relaciones:
                     if c == '<':
-                        estado = 1
+                        etapa = 1
                     elif c == '=':
-                        estado = 5
+                        etapa = 5
                     elif c == '>':
-                        estado = 6
+                        etapa = 6
                     elif c == '!':
-                        estado = 40
-                    contador -= 1
+                        etapa = 40
+                    elif c == ';':
+                        etapa = 41
                     pal += c
                 elif ascii > 64 and ascii < 91:
                     pal += c
-                    estado = 10
+                    etapa = 10
                 elif c.isdigit():
                     pal += c
-                    estado = 13
-                    contador -=1
+                    etapa = 13
                 elif c in simb:
-                    estado = 22
+                    etapa = 22
                     contador -= 1
-                elif c in operadores:
-                    estado = 23
+                elif c in operaciones:
+                    etapa = 23
                     contador-=1
-                elif c == ';':
-                    estado = 41
-                    contador -= 1
                 else:
                     if 8 <= ord(c) <= 15 or ord(c) == 32:
-                        estado = 0
+                        etapa = 0
                     else:
-                        print( f"error en la linea ----> {linea} {ord(c)}")
-                        estado = 0
-                        exit(1)
-            elif estado == 1:
+                        etapa = 0
+            elif etapa == 1:
                 c = cont[contador + 1]
                 ascii = ord(c.upper())
                 if c == '>':
                     pal += c
-                    estado = 3
+                    etapa = 3
                     contador += 1
                 elif c == '=':
                     pal += c
-                    estado = 2
+                    etapa = 2
                     contador += 1
                 else:
-                    estado = 4
+                    etapa = 4
                     pass
-            elif estado == 2:
+            elif etapa == 2:
                 pal = ''
-                estado = 0
-                print( "(MENOR_O_IGUAL, <=)")
-                estado = 0
+                tokens.append( "(MENOR_O_IGUAL, <=)")
+                etapa = 0
                 pass
-            elif estado == 3:
+            elif etapa == 3:
                 pal = ''
-                estado = 0
-                print( "(DISTINTO, <>)")
-                estado = 0
+                tokens.append( "(DIFERENTE, <>)")
+                etapa = 0
                 pass
-            elif estado == 4:
+            elif etapa == 4:
                 pal = ''
-                estado = 0
-                print( "(MENOR, <)")
-                estado = 0
+                tokens.append( "(MENOR, <)")
+                etapa = 0
                 pass
-            elif estado == 5:
+            elif etapa == 5:
                 pal = ''
-                estado = 0
-                print( "(IGUAL, =)")
-                estado = 0
+                tokens.append( "(IGUAL, =)")
+                etapa = 0
                 pass
-            elif estado == 40:
+            elif etapa == 40:
                 pal = ''
-                print( "(DISTINTO, !)")
-                estado = 0
-                contador -= 1
+                tokens.append( "(DIFERENTE, !)")
+                etapa = 0
                 pass
-            elif estado == 6:
+            elif etapa == 41:
+                pal = ''
+                tokens.append("(FIN DE LINEA, ;)")
+                etapa = 0
+                pass
+            elif etapa == 6:
                 if c == '=':
                     pal += c
-                    estado = 7
+                    etapa = 7
                 else:
-                    estado = 8
+                    etapa = 8
                 pass
-            elif estado == 7:
+            elif etapa == 7:
                 pal = ''
-                print( "(MAYOR_O_IGUAL, >=)")
-                estado = 0
-                contador = contador - 1
+                tokens.append( "(MAYOR_O_IGUAL, >=)")
+                etapa = 0
                 pass
-            elif estado == 8:
+            elif etapa == 8:
                 pal = ''
-                print( "(MAYOR, >)")
-                estado = 0
+                tokens.append( "(MAYOR, >)")
+                etapa = 0
                 pass
-            elif estado == 9:
+            elif etapa == 9:
                 pass
-            elif estado == 10:
+            elif etapa == 10:
                 ascii = ord(c.upper())
                 if (ascii > 64 and ascii < 91) or (ascii > 47 and ascii < 58):
                     pal += c
-                    estado = 10
+                    etapa = 10
                 else:
                     contador -= 1
-                    estado = 11
+                    etapa = 11
                 pass
-            elif estado == 11:
+            elif etapa == 11:
                 con = pal
                 pal = ''
-                if con.upper() in palabras_reservadas:
-                    print( "(PALABRA DE C, " + con + ")")
-                    estado = 0
+                if con.upper() in tipos_variables:
+                    tokens.append( "(TIPO DE VARIABLE, " + con + ")")
+                    etapa = 0
+                    contador -= 1
+                elif con.upper() in tipos_bucles:
+                    tokens.append( "(PALABRA BUCLE, " + con + ")")
+                    etapa = 0
+                    contador -= 1
+                elif con.upper() in tipos_acciones:
+                    tokens.append( "(ACCION RESERVADA, " + con + ")")
+                    etapa = 0
                     contador -= 1
                 else:
-                    tabla_de_simbolos.append(['id', con])
-                    print("(ID, " + con + ")")
-                    estado = 0
+                    tokens.append("(NOMBRE_VARIABLE, " + con + ")")
+                    etapa = 0
+                    contador -= 1
 
                 pass
-            elif estado == 12:
+            elif etapa == 12:
                 pass
-            elif estado == 13:
+            elif etapa == 13:
                 if c.isdigit():
-                    print(f"(NUMERO, {pal})")
-                    estado = 0
-                    pal = ''
+                    pal += c
                 elif c == '.':
                     pal += c
-                    estado = 14
-                elif c == 'E' or c == 'e':
-                    pal += c
-                    estado = 16
+                    etapa = 14
                 elif c == ' ':
-                    estado = 20
+                    etapa = 20
                 elif ord(c) == 13:
                     linea += 1
-                    estado = 20
+                    etapa = 20
                 else:
                     contador -= 1
-                    estado = 20
+                    etapa = 20
+                contador -= 1
                 pass
-            elif estado == 14:
+            elif etapa == 14:
                 if c.isdigit():
                     pal += c
-                    estado = 15
-                elif c == 'E' or c == 'e':
-                    pal += c
-                    estado = 16
+                    etapa = 15
                 else:
-                    print( f"ERROR EN: {linea}", ord(c))
-                    estado = 0
-                    exit(-1)
+                    etapa = 0
                 pass
-            elif estado == 15:
+            elif etapa == 15:
                 if c.isdigit():
                     pal += c
-                elif c == 'E' or c == 'e':
-                    pal += c
-                    estado = 16
                 elif c == ' ':
-                    estado = 21
+                    etapa = 21
                 elif ord(c) == 13:
                     linea += 1
-                    estado = 21
+                    etapa = 21
                 else:
                     contador -= 1
-                    estado = 20
+                    etapa = 20
                 pass
-            elif estado == 16:
+            elif etapa == 16:
                 if c == '+' or c == '-':
                     pal += c
-                    estado = 17
+                    etapa = 17
                 elif c.isdigit():
                     pal += c
-                    estado = 18
+                    etapa = 18
                 pass
-            elif estado == 17:
+            elif etapa == 17:
                 if c.isdigit():
                     pal += c
-                    estado = 18
+                    etapa = 18
                 else:
-                    print( f"ERROR EN: {linea}")
-                    estado = 0
-                    exit(-1)
+                    etapa = 0
                 pass
-            elif estado == 18:
+            elif etapa == 18:
                 if c.isdigit():
                     pal += c
                 elif ord(c) == 13:
                     linea += 1
-                    estado = 19
+                    etapa = 19
                 else:
-                    estado = 20
+                    etapa = 20
                     contador -= 1
                 pass
-            elif estado == 19 or estado == 20 or estado == 21:
+            elif etapa == 19 or etapa == 20 or etapa == 21:
                 send = pal
                 pal = ''
-                print( f"(TEXTO, {send})")
-                contador -= 1
-                estado = 0
+                tokens.append(f"(VALOR, {send})")
+                etapa = 0
                 pass
-            elif estado == 22:
-                estado = 0
+            elif etapa == 22:
+                etapa = 0
                 if c == '(':
-                    print( "(INICIO PARENTESIS,'" + c + "')")
-                    estado = 0
+                    tokens.append("(APERTURA PARENTESIS,'" + c + "')")
+                    etapa = 0
                 elif c == ')':
-                    print(  "(FIN PARENTESIS,'" + c + "')")
-                    estado = 0
+                    tokens.append("(CERRADURA PARENTESIS,'" + c + "')")
+                    etapa = 0
                 elif c == '}':
-                    print( "(INICIO LLAVE,'" + c + "')")
-                    estado = 0
+                    tokens.append("(CERRADURA LLAVE,'" + c + "')")
+                    etapa = 0
                 elif c == '{':
-                    print(  "(FIN LLAVE,'" + c + "')")
-                    estado = 0
+                    tokens.append("(APERTURA LLAVE,'" + c + "')")
+                    etapa = 0
                 elif c == '[':
-                    print( "(INICIO CORCHETE,'" + c + "')")
-                    estado = 0
+                    tokens.append("(APERTURA CORCHETE,'" + c + "')")
+                    etapa = 0
                 elif c == ']':
-                    print(  "(FIN CORCHETE,'" + c + "')")
-                    estado = 0
+                    tokens.append("(CERRADURA CORCHETE,'" + c + "')")
+                    etapa = 0
                 elif c == '"':
-                    estado = 24
+                    etapa = 24
                     pal += c
                 elif c == ',':
-                    print(  "(COMA,'" + c + "')")
-                    estado = 0
+                    tokens.append("(COMA,'" + c + "')")
+                    etapa = 0
                 pass
-            elif estado == 23:
-                estado = 0
+            elif etapa == 23:
+                etapa = 0
                 if c == '*':
-                    print(  "(MULTIPLICACIÓN,'" + c + "')")
-                    estado = 0
+                    tokens.append("(MULTIPLICACIÓN,'" + c + "')")
+                    etapa = 0
                 elif c == '+':
-                    print( "(SUMA,'" + c + "')")
-                    estado = 0
+                    tokens.append( "(SUMA,'" + c + "')")
+                    etapa = 0
                 elif c == '-':
-                    print(  "(RESTA,'" + c + "')")
-                    estado = 0
+                    tokens.append(  "(RESTA,'" + c + "')")
+                    etapa = 0
                 elif c == '/':
-                    print(  "(DIVISIÓN,'" + c + "')")
-                    estado = 0
+                    tokens.append(  "(DIVISION,'" + c + "')")
+                    etapa = 0
                 elif c == '%':
-                    print(  "(PORCENTAJE,'" + c + "')")
-                    estado = 0
+                    tokens.append(  "(PORCENTAJE,'" + c + "')")
+                    etapa = 0
                 pass
-            elif estado == 24:
+            elif etapa == 24:
                     pal += c
                     if c != '"':
-                        estado = 24
+                        etapa = 24
                     else:
-                        estado = 0
                         pal2 = pal
                         pal = ''
-                        print(  "(TEXTO,'" + pal2 + "')")
-                        estado = 0
+                        tokens.append("(VALOR,'" + pal2 + "')")
+                        etapa = 0
                     pass
-            elif estado == 41:
-                send = ";"
-                pal = ''
-                print( f"(FIN DE LINEA, {send})")
-                estado = 0
-                pass
             else:
                  contador += 1
                  c = cont[contador]
-
-sigToken()
+        return tokens
+print(sigToken())
