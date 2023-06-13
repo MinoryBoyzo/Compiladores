@@ -1,541 +1,1147 @@
-import ply.lex as lex
-
-reservadas = {
-    'for': 'pFor',
-    'and': 'pAnd',
-    'switch': 'pSwitch',
-    'or': 'pOr',
-    'false': 'pFalse',
-    'true': 'pTrue',
-    'return': 'pReturn',
-    'super': 'pSuper',
-    'else': 'pElse',
-    'if': 'pIf',
-    'NULL': 'pNull',
-    'priny': 'pPrint',
-    'fun': 'pFun',
-    'number': 'pNumber',
-    'this': 'pThis',
-    'string': 'pString',
-    'while': 'pWhile',
-    'class': 'pClass',
-    # 'ademas' :'pAdemas',
-    'var': 'pVar'
-}
-
-tokens = [
-             'coma',
-             'punto',
-             'dosPuntos',
-             'llaveA',
-             'llaveC',
-             'parentesisA',
-             'parentesisC',
-             'menos',
-             'mas',
-             'multiplicacion',
-             'division',
-             'admiracion',
-             'diferenteDe',
-             'igualA',
-             'igualQue',
-             'menorQue',
-             'mayorQue',
-             'menorIgualQue',
-             'mayorIgualQue',
-             'puntoYComa',
-             'id',
-             'entero',
-         ] + list(reservadas.values())
-
-t_coma = r','
-t_punto = r'\.'
-t_dosPuntos = r':'
-t_llaveA = r'\{'
-t_llaveC = r'\}'
-t_parentesisA = r'\('
-t_parentesisC = r'\)'
-t_puntoYComa = r';'
-t_menos = r'-'
-t_mas = r'\+'
-t_multiplicacion = r'\*'
-t_division = r'/'
-t_admiracion = r'!'
-t_diferenteDe = r'!='
-t_igualA = r'='
-t_igualQue = r'=='
-t_menorQue = r'<'
-t_mayorQue = r'>'
-t_menorIgualQue = r'<='
-t_mayorIgualQue = r'>='
-
-t_ignore = " \t"
+import sys
+import os
 
 
-def t_nuevaLinea(t):
-    r'\n+'
-    t.lexer.lineno += len(t.value)
+def convCadena(cadena):
+    newPala = []
+    for c in cadena:
+        if c != "\"":
+            newPala += c
+    return "".join(newPala)
 
 
-def t_comentario(t):
-    r'//.*'
-    pass
+def compfloat(cadena):
+    for c in cadena:
+        if c == '.':
+            return True
+    return False
 
 
-def t_id(t):
-    r'[a-zA-Z_][a-zA-Z0-9_]*'
-    t.type = reservadas.get(t.value, 'id')
-    return t
-
-
-def t_decimal(t):
-    r'(\d*\.\d+)|(\d+\.\d*)'
-    try:
-        t.value = float(t.value)
-    except ValueError:
-        print("Float value too large %d" % t.value)
-        t.value = 0
-    return t
-
-
-def t_entero(t):
-    r'\d+'
-    try:
-        t.value = int(t.value)
-    except ValueError:
-        print("Interger value too large %d" % t.value)
-        t.value = 0
-    return t
-
-
-def t_cadena(t):
-    r'\".*?\"'
-    t.value = t.value[1:-1]
-    return t
-
-
-def t_error(t):
-    print("caracter invalido '%s'" % t.value[0])
-    t.lexer.skip(1)
-
-
-analizador = lex.lex()
-archivo = open("archivo.txt", "r")
-texto = archivo.read()
-
-analizador.input(texto)
-
-lista_tokens = []
-for token in analizador:
-    lista_tokens.append(token.type)
-
-archivo.close()
-
-# print(lista_tokens)
-
-# analizador sintáctico:
-
-nLinea = 0
-estancia = -1
-tokenActual = lista_tokens[estancia]
-
-
-def match(token_esperado):
-    global tokenActual
-    global estancia
-    if tokenActual == token_esperado:
-        estancia += 1
+def reservadas(cadena):
+    palabrasHM = {'for': 'FOR', 'fun': 'FUN', 'false': 'FALSE', 'if': 'IF', 'print': 'PRINT', 'return': 'RETURN',
+                  'true': 'TRUE', 'var': 'VAR', 'else': 'ELSE', 'or': 'OR', 'null': 'NULL', 'try': 'TRY',
+                  'not': 'NOT', 'break': 'BREAK', 'and': 'AND', 'identificador': 'ID', 'float': 'FLOAT',
+                  'int': 'INT', 'string': 'STRING', '=': '=', 'while': 'WHILE',
+                  '+': '+', '-': '-', '/': '/', '': '', '+=': '+=',
+                  '<=': '<=', '>=': '>=', '==': '==', '!=': '!=', '<': '<', '>': '>',
+                  '-=': '-=', '{': '{', '}': '}', '[': '[', ']': ']',
+                  '(': '(', ')': ')', ';': ';', '.': '.', ',': ',',
+                  'class': 'CLASS', 'this': 'THIS', 'super': 'SUPER'}
+    if cadena in palabrasHM:
+        return palabrasHM[cadena]
     else:
-        error()
+        return False
+
+
+def palabraReservada(cadena):
+    tokens = []
+    for cad in cadena:
+        if (reservadas(cad)) != False:
+            tokens.append(reservadas(cad))
+        elif (letras(cad[0])):
+            tokens.append(reservadas('identificador'))
+        elif (numeros(cad[0]) or cad[0] == '.'):
+            if (compfloat(cad)):
+                tokens.append(reservadas('float'))
+            else:
+                tokens.append(reservadas('int'))
+        elif (comillas(cad[0])):
+            if (len(cad) > 2):
+                tokens.append(reservadas('string'))
+            else:
+                tokens.append(reservadas(cad))
+        else:
+            tokens.append(reservadas(cad))
+
+    tokens.append('EOF')
+
+    return tokens
+
+
+def comillas(caracter):
+    return caracter in "\""
+
+
+def simbolicos(caracter):
+    return caracter in "(){}[],.:;-+*/!=<>%&"
+
+
+def espacios(caracter):
+    return caracter in " \n\t"
+
+
+def letras(caracter):
+    return caracter in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWX_"
+
+
+def numeros(caracter):
+    return caracter in "1234567890"
+
+
+def operadores(caracter):
+    return caracter in ["!=", "==", "<=", ">="]
+
+
+def operaciones(caracter):
+    return caracter in "/=+-*"
+
+
+def llaves(caracter):
+    return caracter in "{[()]}"
+
+
+def compnum(cadena):
+    validar = True
+    for n in cadena:
+        if numeros(n) == False:
+            validar = False
+    return validar
+
+
+def sepa(cadena):
+    estado = 0
+    tokens = []
+    tokenaux = []
+    listado = []
+    for c in cadena:
+        if letras(c) and estado == 0:
+            estado = 1
+            tokenaux += c
+        elif numeros(c) and estado == 0:
+            estado = 2
+            tokenaux += c
+        elif comillas(c) and estado == 0:
+            estado = 3
+            tokenaux += c
+        elif simbolicos(c) and estado == 0:
+            tokens += c
+        elif espacios(c) and estado == 0:
+            tokens += c
+        elif (letras(c) or numeros(c)) and estado == 1:
+            tokenaux += c
+        elif comillas(c) and estado == 1:
+            estado = 3
+            tokens.append("".join(tokenaux))
+            tokenaux.clear()
+            tokenaux += c
+        elif simbolicos(c) and estado == 1:
+            estado = 0
+            tokens.append("".join(tokenaux))
+            tokens += c
+            tokenaux.clear()
+        elif espacios(c) and estado == 1:
+            estado = 0
+            tokens.append("".join(tokenaux))
+            tokens += c
+            tokenaux.clear()
+        elif numeros(c) and estado == 2:
+            tokenaux += c
+        elif comillas(c) and estado == 2:
+            estado = 3
+            tokens.append("".join(tokenaux))
+            tokenaux.clear()
+            tokenaux += c
+        elif simbolicos(c) and estado == 2:
+            estado = 0
+            tokens.append("".join(tokenaux))
+            tokens += c
+            tokenaux.clear()
+        elif espacios(c) and estado == 2:
+            estado = 0
+            tokens.append("".join(tokenaux))
+            tokens += c
+            tokenaux.clear()
+        elif letras(c) and estado == 2:
+            estado = 1
+            tokens.append("".join(tokenaux))
+            tokenaux.clear()
+            tokenaux += c
+        elif not (comillas(c)) and estado == 3:
+            tokenaux += c
+        elif comillas(c) and estado == 3:
+            estado = 0
+            tokenaux += c
+            tokens.append("".join(tokenaux))
+            tokenaux.clear()
+    if estado == 3:
+        print("Cadena no terminanda")
+        sys.exit(1)
+    if estado == 2 or estado == 1:
+        tokens.append("".join(tokenaux))
+        tokenaux.clear()
+    tokenaux.clear()
+
+    for i in range(len(tokens)):
+        try:
+            if (tokens[i] in "!=+-<>") and tokens[i + 1] == "=":
+                tokenaux += tokens[i]
+                tokenaux += tokens[i + 1]
+                tokens[i] = "".join(tokenaux)
+                tokens[i + 1] = ""
+                listado.append(i + 1)
+                tokenaux.clear()
+        except IndexError:
+            pass
+    tokenaux.clear()
+
+    compru = 0
+    for i in range(len(tokens)):
+        try:
+            if compru != 0:
+                compru -= 1
+            elif compnum(tokens[i]) and tokens[i + 1] == "." and compnum(tokens[i + 2]):
+                tokenaux += tokens[i]
+                tokenaux += tokens[i + 1]
+                tokenaux += tokens[i + 2]
+                tokens[i] = "".join(tokenaux)
+                tokens[i + 1] = ""
+                tokens[i + 2] = ""
+                listado.append(i + 1)
+                listado.append(i + 2)
+                compru = 2
+                tokenaux.clear()
+            elif tokens[i] == "." and compnum(tokens[i + 1]):
+                tokenaux += tokens[i]
+                tokenaux += tokens[i + 1]
+                tokens[i] = "".join(tokenaux)
+                tokens[i + 1] = ""
+                listado.append(i + 1)
+                compru = 1
+                tokenaux.clear()
+            elif compnum(tokens[i]) and tokens[i + 1] == '.':
+                tokenaux += tokens[i]
+                tokenaux += tokens[i + 1]
+                tokens[i] = "".join(tokenaux)
+                tokens[i + 1] = ""
+                listado.append(i + 1)
+                compru = 1
+                tokenaux.clear()
+
+        except IndexError:
+            if (i + 2) > len(tokens):
+                compru = 0
+            elif tokens[i] == "." and compnum(tokens[i + 1]):
+                tokenaux += tokens[i]
+                tokenaux += tokens[i + 1]
+                tokens[i] = "".join(tokenaux)
+                tokens[i + 1] = ""
+                listado.append(i + 1)
+                compru = 1
+                tokenaux.clear()
+            elif compnum(tokens[i]) and tokens[i + 1] == '.':
+                tokenaux += tokens[i]
+                tokenaux += tokens[i + 1]
+                tokens[i] = "".join(tokenaux)
+                tokens[i + 1] = ""
+                listado.append(i + 1)
+                compru = 1
+                tokenaux.clear()
+
+    tokenaux.clear()
+    listado.sort()
+    cont = 0
+    for num in listado:
+        num -= cont
+        tokens.pop(num)
+        cont += 1
+
+    cont = 0
+    for i in range(len(tokens)):
+        if tokens[i] == ' ':
+            cont += 1
+    for j in range(cont):
+        tokens.remove(' ')
+
+    cont = 0
+    for i in range(len(tokens)):
+        if tokens[i] == '\t':
+            cont += 1
+    for j in range(cont):
+        tokens.remove(' \t')
+
+    cont = 0
+    for i in range(len(tokens)):
+        if tokens[i] == '\n':
+            cont += 1
+    for j in range(cont):
+        tokens.remove('\n')
+
+    return tokens
+
+
+def remove(cadena):
+    estado = 0
+    cad = []
+    for c in cadena:
+        # estado 0
+        if estado == 0 and c == '/':
+            estado = 1
+            cad += c
+        elif estado == 0 and c != '/':
+            cad += c
+        # estado 1
+        elif estado == 1 and c == '/':
+            estado = 2
+            cad.pop()
+        elif estado == 1 and c == '*':
+            estado = 3
+            cad.pop()
+        elif estado == 1 and c != '/':
+            estado = 0
+            cad += c
+        # estado 2
+        elif estado == 2 and c == '\n':
+            estado = 0
+        # estado 3
+        elif estado == 3 and c == '*':
+            estado = 4
+        # estado 4
+        elif estado == 4 and c == '*':
+            estado = 4
+        elif estado == 4 and c == '/':
+            estado = 0
+        elif estado == 4 and c != '/':
+            estado = 3
+    return cad
+
+
+estancia = 0
 
 
 def error():
-    global nLinea
-    print(f"error en linea {nLinea}\n")
+    print("Error sintactico ")
+    print(tokenActual[estancia])
+    sys.exit(1)
 
 
-# ----------------------------ini prod expression-------------------------------
-def EXPRESSION():
+def program():
     global estancia
-    estancia += 1
-    ASSIGMENT()
-
-
-def LOGIC_OR_2():
-    global estancia
-    if tokenActual == "pOr":
-        estancia += 1
-        LOGIC_AND()
-        LOGIC_OR_2()
-    pass
-
-
-def LOGIC_AND():
-    EQUALITY()
-    LOGIC_AND_2()
-
-
-def LOGIC_AND_2():
-    global estancia
-    if tokenActual == "pAnd":
-        estancia += 1
-        EQUALITY()
-        LOGIC_AND_2()
-    pass
-
-
-def EQUALITY():
-    COMPARISON()
-    EQUALITY_2()
-
-
-def EQUALITY_2():
-    global estancia
-    if tokenActual == "equalEqual" or tokenActual == "notEqual":
-        estancia += 1
-        COMPARISON()
-        EQUALITY_2()
-    pass
-
-
-def COMPARISON_2():
-    global estancia
-    if tokenActual == "greaterThan" or tokenActual == "lessThan" or tokenActual == "greaterEqual" or tokenActual == "lessEqual":
-        estancia += 1
-        TERM()
-        COMPARISON_2()
-    pass
-
-
-def TERM():
-    FACTOR()
-    TERM_2()
-
-
-def TERM_2():
-    global estancia
-    if tokenActual == "minus" or tokenActual == "plus":
-        estancia += 1
-        FACTOR()
-        TERM_2()
-    pass
-
-
-def FACTOR_2():
-    global estancia
-    if tokenActual == "divide" or tokenActual == "multiply":
-        estancia += 1
-        UNARY()
-        FACTOR_2()
-
-
-def UNARY():
-    global estancia
-    if tokenActual == "exclamation" or tokenActual == "minus":
-        estancia += 1
-        UNARY()
-        FACTOR()
-    pass
-
-
-def CALL():
-    PRIMARY()
-    CALL_2()
-
-
-def CALL_2():
-    global estancia
-    if tokenActual == "lparen":
-        estancia += 1
-        ARGUMENTS_OPC()
-        match("rparen")
-        CALL_2()
-    elif tokenActual == "dot":
-        estancia += 1
-        match("id")
-        CALL_2()
-    pass
-
-
-def PRIMARY():
-    global estancia
-    if tokenActual == "pTrue" or tokenActual == "pFalse" or tokenActual == "id" or tokenActual == "integer" or tokenActual == "decimal" or tokenActual == "pSuper" or tokenActual == "pNull" or tokenActual == "pThis":
-        estancia += 1
-    elif tokenActual == "lparen":
-        estancia += 1
-        EXPRESSION()
-        match("rparen")
+    declaration()
+    if tokenActual[estancia] == 'EOF':
+        print("cadena aceptada")
     else:
-        error()
+        print("Error de cadena")
 
 
-def FACTOR():
-    UNARY()
-    FACTOR_2()
+# parserDeclaration
+def declaration():
+    if class_decl():
+        declaration()
+    elif fun_decl():
+        declaration()
+    elif var_decl():
+        declaration()
+    elif statement():
+        declaration()
+    else:
+        pass
 
 
-def COMPARISON():
-    TERM()
-    COMPARISON_2()
-
-
-def LOGIC_OR():
-    LOGIC_AND()
-    LOGIC_OR_2()
-
-
-def ASSIGMENT():
-    LOGIC_OR()
-    ASSIGMENT_OPC()
-
-
-def ASSIGMENT_OPC():
+def class_decl():
     global estancia
-    if tokenActual == "equal":
+    if tokenActual[estancia] == 'CLASS':
         estancia += 1
-        EXPRESSION()
-    pass
-
-
-# ----------------------------fin prod expression-------------------------------
-# --------------------------ini prod declaration--------------------
-def CLASS_INHER():
-    global estancia
-    global nLinea
-    nLinea += 1
-    if tokenActual == "lessThan":
-        estancia += 1
-        if tokenActual == "id":
+        if tokenActual[estancia] == 'ID':
             estancia += 1
-            print(f"linea {nLinea} aceptada\n")
-            parse_DECLARATION()
-        else:
-            error()
-
-
-def CLAS_DECL():
-    global estancia
-    if tokenActual == "id":
-        estancia += 1
-        CLASS_INHER()
-
-
-def VAR_INIT():
-    EXPRESSION()
-
-
-def parse_DECLARATION():
-    global estancia
-    if tokenActual == "pClass":
-        estancia += 1
-        CLAS_DECL()
-        estancia += 1
-    elif tokenActual == "fun":
-        estancia += 1
-        FUNCTION()
-    elif tokenActual == "pVar":
-        estancia += 1
-        VAR_DECL()
-    else:
-        parse_STATEMENT()
-
-
-def VAR_DECL():
-    global estancia
-    if tokenActual == "id":
-        estancia += 1
-        VAR_INIT()
-
-
-# -------------------------fin prod declaration-------------------
-# ----------------------------ini prod statement------------------
-def parse_STATEMENT():
-    global estancia
-    global nLinea
-    if tokenActual == "pFor":
-        estancia += 1
-        nLinea += 1
-        FOR_STMT()
-    elif tokenActual == "pTrue" or tokenActual == "pFalse" or tokenActual == "id" or tokenActual == "lparen" or tokenActual == "integer" or tokenActual == "decimal" or tokenActual == "pSuper" or tokenActual == "pNull" or tokenActual == "pThis":
-        estancia += 1
-        nLinea += 1
-        EXPR_STMT()
-    elif tokenActual == "pIf":
-        estancia += 1
-        nLinea += 1
-        IF_STMT()
-    elif tokenActual == "pPrint":
-        estancia += 1
-        nLinea += 1
-        PRINT_STMT()
-    elif tokenActual == "pReturn":
-        estancia += 1
-        nLinea += 1
-        RETURN_STMT()
-    elif tokenActual == "pWhile":
-        estancia += 1
-        nLinea += 1
-        WHILE_STMT()
-    elif tokenActual == "lbrace":
-        estancia += 1
-        nLinea += 1
-        BLOCK()
-    else:
-        EXPRESSION()
-
-
-def PRINT_STMT():
-    EXPRESSION()
-    match("semicolon")
-
-
-def RETURN_STMT():
-    RETURN_EXP_OPC()
-    match("semicolon")
-
-
-def RETURN_EXP_OPC():
-    EXPRESSION()
-
-
-def WHILE_STMT():
-    global estancia
-    if tokenActual == "lparen":
-        estancia += 1
-        EXPRESSION()
-        match("rparen")
-        parse_STATEMENT()
-    else:
-        error()
-
-
-def ELSE_STATEMENT():
-    global estancia
-    if tokenActual == "pElse":
-        estancia += 1
-        parse_STATEMENT()
-    pass
-
-
-def IF_STMT():
-    global estancia
-    if tokenActual == "lparen":
-        estancia += 1
-        EXPRESSION()
-        match("rparen")
-        parse_STATEMENT()
-        ELSE_STATEMENT()
-    else:
-        error()
-
-
-def EXPR_STMT():
-    EXPRESSION()
-    match("semicolon")
-
-
-def BLOCK():
-    BLOCK_DECL()
-    match("rbrace")
-
-
-def BLOCK_DECL():
-    parse_STATEMENT()
-
-
-def FOR_STMT():
-    if tokenActual == "lparen":
-        global estancia
-        estancia += 1
-        FOR_STMT_1()
-        FOR_STMT_2()
-        FOR_STMT_3()
-        if tokenActual == "rparen":
-            parse_STATEMENT()
+            if class_inher():
+                if tokenActual[estancia] == '{':
+                    estancia += 1
+                    if functions():
+                        if tokenActual[estancia] == '}':
+                            estancia += 1
+                            return True
+                        else:
+                            error()
+                    else:
+                        error()
+                else:
+                    error()
+            else:
+                error()
         else:
             error()
     else:
-        error()
+        return False
 
 
-def FOR_STMT_1():
+def class_inher():
     global estancia
-    if tokenActual == "pVar":
+    if tokenActual[estancia] == '<':
         estancia += 1
-        VAR_DECL()
-    elif tokenActual == "equal":
-        estancia += 1
-        VAR_INIT()
-    elif tokenActual == "semicolon":
-        print("linea aceptada")
-
-
-def FOR_STMT_2():
-    if tokenActual != "semicolon":
-        EXPRESSION()
-        match("semicolon")
-
-
-def FOR_STMT_3():
-    EXPRESSION()
-
-
-# -------------------------------------ini prod otras----------------------------------------
-def FUNCTION():
-    if tokenActual == "id":
-        global estancia
-        estancia += 1
-        if tokenActual == "lparen":
+        if tokenActual[estancia] == 'ID':
             estancia += 1
-            PARAMETERS_OPC()
-            match("rparen")
-            BLOCK()
-
-
-def FUNCTIONS():
-    FUNCTION()
-    FUNCTIONS()
-
-
-def PARAMETERS_OPC():
-    PARAMETERS()
-
-
-def PARAMETERS():
-    if tokenActual == "id":
-        global estancia
-        estancia += 1
-        PARAMETERS_2()
+            return True
+        else:
+            error()
     else:
-        error()
+        return True
 
 
-def PARAMETERS_2():
-    if tokenActual == "comma":
-        match("id")
-        PARAMETERS_2()
-    pass
+def fun_decl():
+    global estancia
+    if tokenActual[estancia] == 'FUN':
+        estancia += 1
+        if funct(): return True
+    else:
+        return False
 
 
-def ARGUMENTS_OPC():
-    ARGUMENTS()
+def var_decl():
+    global estancia
+    if tokenActual[estancia] == 'VAR':
+        estancia += 1
+        if tokenActual[estancia] == 'ID':
+            estancia += 1
+            if var_init():
+                if tokenActual[estancia] == ';':
+                    estancia += 1
+                    return True
+                else:
+                    error()
+            else:
+                error()
+        else:
+            error()
+    else:
+        return False
 
 
-def ARGUMENTS():
-    EXPRESSION()
-    ARGUMENTS_2()
+def var_init():
+    global estancia
+    if tokenActual[estancia] == '=':
+        estancia += 1
+        if expression():
+            return True
+    else:
+        return True
 
 
-def ARGUMENTS_2():
-    if tokenActual == "comma":
-        EXPRESSION()
-        ARGUMENTS_2()
-    pass
+# parsesStatement
+def statement():
+    global estancia
+    if expr_stmt():
+        return True
+    elif for_stmt():
+        return True
+    elif if_stmt():
+        return True
+    elif print_stmt():
+        return True
+    elif return_stmt():
+        return True
+    elif while_stmt():
+        return True
+    elif block():
+        return True
+    else:
+        return False
 
 
-# ---------------------------inicio---------------------------
-parse_DECLARATION()
-if(parse_DECLARATION()== -1):
-    print("hay errores sintacticos")
+def expr_stmt():
+    global estancia
+    if expression():
+        if tokenActual[estancia] == ';':
+            estancia += 1
+            return True
+        else:
+            error()
+    else:
+        return False
+
+
+def for_stmt():
+    global estancia
+    if tokenActual[estancia] == 'FOR':
+        estancia += 1
+        if tokenActual[estancia] == '(':
+            estancia += 1
+            if for_stmt_1():
+                if for_stmt_2():
+                    if for_stmt_3():
+                        if tokenActual[estancia] == ')':
+                            estancia += 1
+                            if statement():
+                                return True
+                            else:
+                                error()
+                        else:
+                            error()
+                    else:
+                        error()
+                else:
+                    error()
+            else:
+                error()
+        else:
+            error()
+    else:
+        return False
+
+
+def for_stmt_1():
+    global estancia
+    if var_decl():
+        return True
+    elif expr_stmt():
+        return True
+    elif tokenActual[estancia] == ';':
+        estancia += 1
+        return True
+    else:
+        return False
+
+
+def for_stmt_2():
+    global estancia
+    if expression():
+        if tokenActual[estancia] == ';':
+            estancia += 1
+            return True
+        else:
+            error()
+    elif tokenActual[estancia] == ';':
+        estancia += 1
+        return True
+    else:
+        return False
+
+
+def for_stmt_3():
+    global estancia
+    if expression():
+        return True
+    else:
+        return True
+
+
+def if_stmt():
+    global estancia
+    if tokenActual[estancia] == 'IF':
+        estancia += 1
+        if tokenActual[estancia] == '(':
+            estancia += 1
+            if expression():
+                if tokenActual[estancia] == ')':
+                    estancia += 1
+                    if statement():
+                        if else_statement():
+                            return True
+                        else:
+                            error()
+                    else:
+                        error()
+                else:
+                    error()
+            else:
+                error()
+        else:
+            error()
+    else:
+        return False
+
+
+def else_statement():
+    global estancia
+    if tokenActual[estancia] == 'ELSE':
+        estancia += 1
+        if statement():
+            return True
+        else:
+            error()
+    else:
+        return True
+
+
+def print_stmt():
+    global estancia
+    if tokenActual[estancia] == 'PRINT':
+        estancia += 1
+        if expression():
+            if tokenActual[estancia] == ';':
+                estancia += 1
+                return True
+            else:
+                error()
+        else:
+            error()
+    else:
+        return False
+
+
+def return_stmt():
+    global estancia
+    if tokenActual[estancia] == 'RETURN':
+        estancia += 1
+        if return_exp_opc():
+            if tokenActual[estancia] == ';':
+                estancia += 1
+                return True
+            else:
+                error()
+        else:
+            error()
+    else:
+        return False
+
+
+def return_exp_opc():
+    global estancia
+    if expression():
+        return True
+    else:
+        return True
+
+
+def while_stmt():
+    global estancia
+    if tokenActual[estancia] == 'WHILE':
+        estancia += 1
+        if tokenActual[estancia] == '(':
+            estancia += 1
+            if expression():
+                if tokenActual[estancia] == ')':
+                    estancia += 1
+                    if statement():
+                        return True
+                    else:
+                        error()
+                else:
+                    error()
+            else:
+                error()
+        else:
+            error()
+    else:
+        return False
+
+
+def block():
+    global estancia
+    if tokenActual[estancia] == '{':
+        estancia += 1
+        if block_decl():
+            if tokenActual[estancia] == '}':
+                estancia += 1
+                return True
+            else:
+                error()
+        else:
+            error()
+    else:
+        return False
+
+
+def block_decl():
+    global estancia
+    if declaration():
+        if block_decl():
+            return True
+        else:
+            error()
+    else:
+        return True
+
+
+# EXPRESSION
+def expression():
+    global estancia
+    if assignment():
+        return True
+    else:
+        return False
+
+
+def assignment():
+    global estancia
+    if logic_or():
+        if assignment_opc():
+            return True
+        else:
+            error()
+    else:
+        return False
+
+
+def assignment_opc():
+    global estancia
+    if tokenActual[estancia] == '=':
+        estancia += 1
+        if expression():
+            return True
+        else:
+            error()
+    else:
+        return True
+
+
+def logic_or():
+    global estancia
+    if logic_and():
+        if logic_or_2():
+            return True
+        else:
+            error()
+    else:
+        return False
+
+
+def logic_or_2():
+    global estancia
+    if tokenActual[estancia] == 'OR':
+        estancia += 1
+        if logic_and():
+            if logic_or_2():
+                return True
+            else:
+                error()
+        else:
+            error()
+    else:
+        return True
+
+
+def logic_and():
+    global estancia
+    if equality():
+        if logic_and_2():
+            return True
+        else:
+            error()
+    else:
+        return False
+
+
+def logic_and_2():
+    global estancia
+    if tokenActual[estancia] == 'AND':
+        estancia += 1
+        if equality():
+            if logic_and_2():
+                return True
+            else:
+                error()
+        else:
+            error()
+    else:
+        return True
+
+
+def equality():
+    global estancia
+    if comparison():
+        if equality_2():
+            return True
+        else:
+            error()
+    else:
+        return False
+
+
+def equality_2():
+    global estancia
+    if tokenActual[estancia] == '!=':
+        estancia += 1
+        if comparison():
+            if equality_2():
+                return True
+            else:
+                error()
+        else:
+            error()
+    elif tokenActual[estancia] == '==':
+        estancia += 1
+        if comparison():
+            if equality_2():
+                return True
+            else:
+                error()
+        else:
+            error()
+    else:
+        return True
+
+
+def comparison():
+    global estancia
+    if term():
+        if comparison_2():
+            return True
+        else:
+            error()
+    else:
+        return False
+
+
+def comparison_2():
+    global estancia
+    if tokenActual[estancia] == '>':
+        estancia += 1
+        if term():
+            if comparison_2():
+                return True
+            else:
+                error()
+        else:
+            error()
+    elif tokenActual[estancia] == '>=':
+        estancia += 1
+        if term():
+            if comparison_2():
+                return True
+            else:
+                error()
+        else:
+            error()
+    elif tokenActual[estancia] == '<':
+        estancia += 1
+        if term():
+            if comparison_2():
+                return True
+            else:
+                error()
+        else:
+            error()
+    elif tokenActual[estancia] == '<=':
+        estancia += 1
+        if term():
+            if comparison_2():
+                return True
+            else:
+                error()
+        else:
+            error()
+    else:
+        return True
+
+
+def term():
+    global estancia
+    if factor():
+        if term_2():
+            return True
+        else:
+            error()
+    else:
+        return False
+
+
+def term_2():
+    global estancia
+    if tokenActual[estancia] == '-':
+        estancia += 1
+        if factor():
+            if term_2():
+                return True
+            else:
+                error()
+        else:
+            error()
+    elif tokenActual[estancia] == '+':
+        estancia += 1
+        if factor():
+            if term_2():
+                return True
+            else:
+                error()
+        else:
+            error()
+    else:
+        return True
+
+
+def factor():
+    global estancia
+    if unary():
+        if factor_2():
+            return True
+        else:
+            error()
+    else:
+        return False
+
+
+def factor_2():
+    global estancia
+    if tokenActual[estancia] == '/':
+        estancia += 1
+        if unary():
+            if factor_2():
+                return True
+            else:
+                error()
+        else:
+            error()
+    elif tokenActual[estancia] == '*':
+        estancia += 1
+        if unary():
+            if factor_2():
+                return True
+            else:
+                error()
+        else:
+            error()
+    else:
+        return True
+
+
+def unary():
+    global estancia
+    if tokenActual[estancia] == '!':
+        estancia += 1
+        if unary():
+            return True
+        else:
+            error()
+    elif tokenActual[estancia] == '-':
+        estancia += 1
+        if unary():
+            return True
+        else:
+            error()
+    elif call():
+        return True
+    else:
+        return False
+
+
+def call():
+    global estancia
+    if primary():
+        if call_2():
+            return True
+        else:
+            error()
+    else:
+        return False
+
+
+def call_2():
+    global estancia
+    if tokenActual[estancia] == '(':
+        estancia += 1
+        if arguments_opc():
+            if tokenActual[estancia] == ')':
+                estancia += 1
+                if call_2():
+                    return True
+                else:
+                    error()
+            else:
+                error()
+        else:
+            error()
+    elif tokenActual[estancia] == '.':
+        estancia += 1
+        if tokenActual[estancia] == 'ID':
+            estancia += 1
+            if call_2():
+                return True
+            else:
+                error()
+        else:
+            error()
+    else:
+        return True
+
+
+def call_opc():
+    global estancia
+
+
+def primary():
+    global estancia
+    if tokenActual[estancia] == 'TRUE':
+        estancia += 1
+        return True
+    elif tokenActual[estancia] == 'FALSE':
+        estancia += 1
+        return True
+    elif tokenActual[estancia] == 'NULL':
+        estancia += 1
+        return True
+    elif tokenActual[estancia] == 'THIS':
+        estancia += 1
+        return True
+    elif tokenActual[estancia] == 'INT':
+        estancia += 1
+        return True
+    elif tokenActual[estancia] == 'FLOAT':
+        estancia += 1
+        return True
+    elif tokenActual[estancia] == 'STRING':
+        estancia += 1
+        return True
+    elif tokenActual[estancia] == 'ID':
+        estancia += 1
+        return True
+    elif tokenActual[estancia] == '(':
+        estancia += 1
+        if expression():
+            if tokenActual[estancia] == ')':
+                estancia += 1
+                return True
+            else:
+                error()
+        else:
+            error()
+    elif tokenActual[estancia] == 'SUPER':
+        estancia += 1
+        if tokenActual[estancia] == '.':
+            estancia += 1
+            if tokenActual[estancia] == 'ID':
+                estancia += 1
+                return True
+            else:
+                error()
+        else:
+            error()
+    else:
+        return False
+
+
+# Otras----------------------------------------------------
+def funct():
+    global estancia
+    if tokenActual[estancia] == 'ID':
+        estancia += 1
+        if tokenActual[estancia] == '(':
+            estancia += 1
+            if parameters_opc():
+                if tokenActual[estancia] == ')':
+                    estancia += 1
+                    if block():
+                        return True
+                    else:
+                        error()
+                else:
+                    error()
+            else:
+                error()
+        else:
+            error()
+    else:
+        return False
+
+
+def functions():
+    global estancia
+    if funct():
+        if functions():
+            return True
+        else:
+            error()
+    else:
+        return True
+
+
+def parameters_opc():
+    global estancia
+    if parameters():
+        return True
+    else:
+        return True
+
+
+def parameters():
+    global estancia
+    if tokenActual[estancia] == 'ID':
+        estancia += 1
+        if parameters_2():
+            return True
+        else:
+            error()
+    else:
+        False
+
+
+def parameters_2():
+    global estancia
+    if tokenActual[estancia] == ',':
+        estancia += 1
+        if tokenActual[estancia] == 'ID':
+            estancia += 1
+            if parameters_2():
+                return True
+            else:
+                error()
+        else:
+            error()
+    else:
+        return True
+
+
+def arguments_opc():
+    global estancia
+    if arguments():
+        return True
+    else:
+        return True
+
+
+def arguments():
+    global estancia
+    if expression():
+        if arguments_2():
+            return True
+        else:
+            error()
+    else:
+        False
+
+
+def arguments_2():
+    global estancia
+    if tokenActual[estancia] == ',':
+        estancia += 1
+        if expression():
+            if arguments_2():
+                return True
+            else:
+                error()
+        else:
+            error()
+    else:
+        return True
+
+
+def lexico(cadena):
+    cad = remove(cadena)
+    global globalLex
+    globalLex = sepa(cad)
+    global tokenActual
+    tokenActual = palabraReservada(globalLex)
+
+    program()
+
+
+def transforma(archivo):
+    if not os.path.exists(archivo):
+        return False
+    arch = open(archivo, "r")
+    cadena = []
+    for linea in arch:
+        for c in linea:
+            cadena += c
+    arch.close()
+    return cadena
+
+
+if len(sys.argv) == 2:
+    cadena = transforma(sys.argv[1])
+    if (not cadena):
+        print("Error al leer el archivo.")
+    else:
+        lexico(cadena)
+elif len(sys.argv) == 1:
+    cadena = []
+    print("Para terminar esciba 'ok'")
+    while True:
+        escrito = input('>>')
+        if escrito != 'ok':
+            cadena += escrito + '\n'
+        else:
+            break
+    lexico(cadena)
+
 else:
-    print("archivo aceptado")
+    print("Error de ejecución")
