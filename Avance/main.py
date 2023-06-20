@@ -1133,14 +1133,21 @@ if len(sys.argv) == 2:
     else:
         lexico(cadena)
 elif len(sys.argv) == 1:
+    print("Seleccione la opción deseada \n1.Leer archivo txt\n2.Ingresar manualmente la cadena")
+    varOpcion = input('Opción: ')
     cadena = []
-    print("Para terminar esciba 'ok'")
-    while True:
-        escrito = input('>>')
-        if escrito != 'ok':
-            cadena += escrito + '\n'
-        else:
-            break
+    if varOpcion == '1':
+        archivo = open("archivo.txt", "r")
+        texto = archivo.read()
+        cadena = texto
+    else:
+        print("Para terminar esciba 'ok'")
+        while True:
+            escrito = input('>>')
+            if escrito != 'ok':
+                cadena += escrito + '\n'
+            else:
+                break
     lexico(cadena)
 
 else:
